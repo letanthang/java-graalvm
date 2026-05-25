@@ -1,25 +1,30 @@
-# Multi-stage Dockerfile for `user-service`
-# Build stage: uses an official Maven image with a JDK to compile/package the app
-ARG MAVEN_IMAGE=maven:3.9.11-eclipse-temurin-21
-ARG JRE_IMAGE=eclipse-temurin:21-jre
-FROM ${MAVEN_IMAGE} as build
-WORKDIR /workspace
+# =========================================================================
+# STAGE 1: Build the Native Binary using GraalVM JDK 21+
+# =========================================================================
+FROM ghcr.io/graalvm/native-image-community:25 AS builder
+WORKDIR /build
 
 # Copy only the files needed for dependency resolution first for better caching
-COPY pom.xml ./
-# (no mvnw/.mvn in this project; the base Maven image provides `mvn`)
+# copy maven wrapper
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+
+RUN ./mvnw dependency:go-offline -B
 
 # Copy source and build
 COPY src ./src
+# Build the Native Image
+RUN ./mvnw clean package -DskipTests
 
-# Use a non-interactive, reproducible build
-RUN mvn -B -DskipTests package
-
-# Runtime stage: small JRE image
-FROM ${JRE_IMAGE} as runtime
+# =========================================================================
+# STAGE 2: Run the Native Binary in a lightweight environment
+# =========================================================================
+# Using Google's Distroless static image for maximum security and minimal size (~30MB)
+FROM gcr.io/distroless/static-debian12:latest
 WORKDIR /app
-# Copy the shaded JAR from build stage
-COPY --from=build /workspace/target/*-shaded.jar app.jar
+# Copy the compiled native binary from the builder stage
+# (Adjust "app-java25-native" to match the <imageName> in your pom.xml)
+COPY --from=builder /build/target/app-java25-native /app/server
 
 # Expose a common web port (adjust if your app listens on a different port)
 EXPOSE 8080
@@ -28,24 +33,5 @@ EXPOSE 8080
 RUN addgroup --system app && adduser --system --ingroup app app || true
 USER app
 
-# JVM options tuned for Kubernetes
-ENV JAVA_TOOL_OPTIONS="\
--XX:+UseContainerSupport \
--XX:InitialRAMPercentage=40 \
--XX:MaxRAMPercentage=60 \
--XX:ActiveProcessorCount=1 \
--XX:+UseG1GC \
--XX:MaxGCPauseMillis=200 \
--XX:+TieredCompilation \
--XX:CompileThreshold=100 \
--XX:+AlwaysPreTouch \
-"
-
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
-
-# Notes:
-# - To change Java version, set the build ARGs at docker build time:
-#   docker build --build-arg MAVEN_IMAGE=maven:3.9.6-eclipse-temurin-21 \
-#                --build-arg JRE_IMAGE=eclipse-temurin:21-jre -t user-service:latest .
-# - If you already have a JAR (e.g. target/user-service-1.0.jar) and want a smaller build,
-#   you can replace the build stage and simply COPY the existing jar into the runtime image.
+# Run the native binary directly
+ENTRYPOINT ["/app/server"]
