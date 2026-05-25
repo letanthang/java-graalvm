@@ -29,7 +29,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>com.example.authservice.Main</mainClass>
+                  <mainClass>vn.act.demo.Main</mainClass>
                 </transformer>
               </transformers>
               <filters>
