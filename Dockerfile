@@ -29,9 +29,5 @@ COPY --from=builder /build/target/app-java25-native /app/server
 # Expose a common web port (adjust if your app listens on a different port)
 EXPOSE 8080
 
-# Use a non-root user for improved security where possible
-RUN addgroup --system app && adduser --system --ingroup app app || true
-USER app
-
 # Run the native binary directly
 ENTRYPOINT ["/app/server"]

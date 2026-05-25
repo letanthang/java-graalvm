@@ -1,4 +1,4 @@
-IMAGE := letanthang/java-demo3
+IMAGE := letanthang/java-graalvm
 MAIN := src/main/java/vn/act/demo
 
 install:
@@ -6,7 +6,7 @@ install:
 run:
 	mvn clean install
 	./target/app-java25-native
-run/manual:
+native:
 	javac -d out src/main/java/vn/act/demo/Main.java && native-image -cp out vn.act.demo.Main out/main  && ./out/main
 r:
 	java src/main/java/vn/act/demo/Main.java
