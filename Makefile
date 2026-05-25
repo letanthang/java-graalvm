@@ -1,14 +1,15 @@
 IMAGE := letanthang/java-demo3
-
-r:
-	java src/main/java/vn/act/demo/Main.java
+MAIN := src/main/java/vn/act/demo
 
 install:
 	mvn clean install
 run:
 	mvn clean install
-	java -jar target/demo-1.0.jar
-
+	./target/app-java25-native
+run/manual:
+	javac -d out src/main/java/vn/act/demo/Main.java && native-image -cp out vn.act.demo.Main out/main  && ./out/main
+r:
+	java src/main/java/vn/act/demo/Main.java
 up:
 	docker run $(IMAGE)
 

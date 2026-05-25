@@ -7,19 +7,8 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.5.0</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>vn.act.demo.Main</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.4.1</version>
+        <version>3.6.0</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -51,21 +40,31 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.6.0</version>
+        <groupId>org.graalvm.buildtools</groupId>
+        <artifactId>native-maven-plugin</artifactId>
+        <version>0.10.4</version>
+        <extensions>true</extensions>
         <executions>
           <execution>
-            <id>copy-dependencies</id>
-            <phase>prepare-package</phase>
+            <id>build-native</id>
+            <phase>package</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>compile-no-fork</goal>
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <imageName>app-java25-native</imageName>
+          <mainClass>vn.act.demo.Main</mainClass>
+          <buildArgs>
+            <buildArg>--no-fallback</buildArg>
+            <buildArg>-O3</buildArg>
+          </buildArgs>
+        </configuration>
       </plugin>
     </plugins>
   </build>
   <properties>
-    <maven.compiler.release>21</maven.compiler.release>
+    <maven.compiler.release>25</maven.compiler.release>
   </properties>
 </project>
